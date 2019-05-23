@@ -39,7 +39,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define NO_VALID   	0	// No month
+#define NO_VALID   	0	// No data
 #define IS_VALID    1	// 
 #define IN_VALID    2	// None valid data
 #define CH_VALID	'Y'	// Valid char
@@ -48,9 +48,16 @@
 #define START_YEARS 250
 #define ADD_YEARS   50
 
-#define MONTH_OFF	1 	// Array month offset		
+#define MONTH_OFF	1 	// Array month offset	
 
-char *months[] = {"", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+#define STAGE_1 	'S1'
+#define STAGE_2 	'S2'
+#define STAGE_3 	'S3'
+
+#define NO_DATA		"..."
+#define IN_DATA		"*"
+
+char *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
             		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 // Could be done as defines 
 enum months_e {na, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep,
@@ -73,84 +80,20 @@ typedef struct
 }year_rainfull_t;
 
 int mygetchar();
+int get_data(year_rainfull_t *data, int *site, size_t *size);
+void s1_output(year_rainfull_t *data, int site, size_t size);
 
 int main(int argc, char *argv[]) 
 {
-    int current_years = START_YEARS;
-	
-    // Buffers
-    int yb;
-    int mb;
-    double rb;
-    char vb;
-	int d;
-	bool first_run = true;
-
+	int site = 0;
 	size_t size = 0;	
-	year_rainfull_t data[current_years];
+	year_rainfull_t data[START_YEARS];
 	// Clear all values
 	memset(data, 0, sizeof(data));
 
-	// Eat first line
-	while(mygetchar() != '\n');
-	
-    while(scanf("IDCJAC0001,%d,%d,%d,%lf,%c\n", &d, &yb, &mb, &rb, &vb) == 5)
-    {
-        // Special case, first run 
-        if (first_run == true)
-		{
-			puts("first run");
-			first_run = false;
-			data[size].year = yb;
-		}
-		
-		// Increment year
-        if (data[size].year != yb)
-        {
-			puts("year increment");
-            size++;
-            data[size].year = yb;
-        }
-		puts("spam");
-		printf("%d, %d \n", d, yb);
-		// Input month data into that year
-		data[size].month[mb- MONTH_OFF].rainfull = rb;
-		if (vb == CH_VALID)
-		{
-			data[size].month[mb-MONTH_OFF].rainfull = IS_VALID;
-		}
-		else
-		{
-			data[size].month[mb-MONTH_OFF].rainfull = IN_VALID;
-		}	
-    }
-
-	printf("%ld \n", size);
-	
-	int i;
-	for (i = 0; i < size; i++)
-	{
-		printf("%d ", data[i].year);
-		int j;
-		for (j = 0; j < MONTHS; j++)
-		{
-			if (data[i].month[j].valid != NO_VALID)
-			{
-				printf("%s", months[j+1]);
-				
-				if (data[i].month[j].valid != IS_VALID)
-				{
-					printf("* ");
-				}
-				else
-				{
-					printf(" ");
-				}
-			}
-		}
-		puts("");
-	}
-	return 0;
+	// S1
+	get_data(data, &site, &size);
+	s1_output(data, site, size);
 }
 
 
@@ -159,4 +102,86 @@ int mygetchar()
 	int c;
 	while ((c=getchar())=='\r');
 	return c;
+}
+
+/* Passes the contontent of stdin into year_rainfull_t array*/
+int get_data(year_rainfull_t *data, int *site, size_t *size)
+{
+	// Buffers
+    int yb;
+    int mb;
+    double rb;
+    char vb;
+	int sb;
+
+	bool first_run = true;
+	*size = 0;
+
+	// Eat first line
+	while(mygetchar() != '\n');
+
+	/* Should work without the \n at the end, but on debian (Linux mint 19.1)
+	system it wont work without it, but works fine on Windows 10. 
+	more testing is needed!*/
+    while(scanf("IDCJAC0001,%d,%d,%d,%lf,%c\n", &sb, &yb, &mb, &rb, &vb) == 5)
+    {
+        // Special case, first run 
+        if (first_run == true)
+		{
+			first_run = false;
+			data[*size].year = yb;
+			*site = sb;
+		}
+		
+		// Increment year
+        if (data[*size].year != yb)
+        {
+            *size += 1;
+            data[*size].year = yb;
+
+        }
+
+		// Input month data into that year
+		data[*size].month[mb- MONTH_OFF].rainfull = rb;
+		if (vb == CH_VALID)
+		{
+			data[*size].month[mb-MONTH_OFF].valid = IS_VALID;
+		}
+		else
+		{
+			data[*size].month[mb-MONTH_OFF].valid = IN_VALID;
+		}	
+    }
+	// Sucsess 
+	return 1;
+}
+
+/* Outputs S1 */ 
+/* STILL NEEDS FORMATTING!! */
+void s1_output(year_rainfull_t *data, int site, size_t size)
+{
+	printf("S1, site number %d, %ld datalines in input\n", site, size);
+	
+	int i;
+	for (i=0; i <= size; i++)
+	{
+		printf("S1, %d:", data[i].year);
+
+		int j;
+		for (j = 0; j< MONTHS; j++)
+		{
+			if (data[i].month[j].valid != NO_VALID)
+			{
+				printf("%5s", months[j]);
+				if (data[i].month[j].valid == IN_VALID)
+					printf("%s", IN_DATA);
+			}
+			else
+			{
+				printf(" %s", NO_DATA);
+			}
+			
+		}
+		puts("");
+	}
 }
