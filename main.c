@@ -40,14 +40,14 @@
 #include <math.h>
 #include <string.h>
 
-#define NO_VALID   	0	// No data
-#define IS_VALID    1	// 
-#define IN_VALID    2	// None valid data
+#define NO_VALID	0	// No data
+#define IS_VALID	1	// 
+#define IN_VALID	2	// None valid data
 #define CH_VALID	'Y'	// Valid char
 
-#define MONTHS      12
-#define START_YEARS 250
-#define ADD_YEARS   50
+#define MONTHS		12
+#define START_YEARS	250
+#define ADD_YEARS	50
 
 #define MONTH_OFF	1 	// Array month offset	
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	memset(data, 0, sizeof(data));
 
 	// S1
-	lines = get_data(data, &site, &size);
+	lines = get_data(data, &size, &site);
 	s1_output(data, site, size, lines);
 
 	// S2
@@ -378,7 +378,8 @@ void s3_output(year_rainfull_t *data, size_t size,
 		{
 			printf("S3, %s, %2d values, %d-%d, tau of %5.2lf\n", 
 			months[i], avrg_rainfull[i].months, avrg_rainfull[i].min_y,
-			avrg_rainfull[i].max_y, kendall_tau(data, size, avrg_rainfull, i));
+			avrg_rainfull[i].max_y, 
+			kendall_tau(data, size, avrg_rainfull, i));
 		}
 		else 
 		{
