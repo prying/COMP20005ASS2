@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	int site	= 0;
 	size_t size = 0;
 	int lines 	= 0;	
-	//int i 		= 0;
+	int i 		= 0;
 	month_avrage_t avrg_rainfull[MONTHS];
 	year_rainfull_t data[START_YEARS];
 	// Clear all values
@@ -125,8 +125,11 @@ int main(int argc, char *argv[])
 	s3_output(data, size, avrg_rainfull);
 
 	// S4
-	s4_output(data, size, avrg_rainfull, 2003);
-
+	for(i = 1; i<argc; i++)
+	{
+		s4_output(data, size, avrg_rainfull, argv[i]);
+	}
+	
 	printf("Ta daa!");
 	return 1;
 }
@@ -373,23 +376,22 @@ void s3_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull
 /* Prints graph of year */
 void s4_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, char *year)
 {
-	double max_rf = 0;
+	double max_rf 	= 0;
 	size_t year_pos = 0;
-	int scale_fac = 0;
+	int scale_fac 	= 0;
 	/* Create a tile from the last 2 digits of the year. i doubt this code
 	will be used in a little under 8000 years*/
-	char graph_tile[] = year+2;
+	char *graph_tile = year+2;
 	// Find the largest value for 'year'
 	year_pos = year_serch(data, size, atoi(year));
 	max_rf = max_rainfull(data,size,year_pos);
 	scale_fac = ceil(max_rf/Y_AXIS);
+
 	printf("S4, %s max is %5.1lf, scale is %d\n", year, max_rf, scale_fac);
 
-	
 	// Draw graph
 	draw_graph(data, size, avrg_rainfull, scale_fac, year_pos, graph_tile);
 	puts("");
-
 }
 
 /* Returns the element that hold the year */
@@ -426,6 +428,7 @@ double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos)
 
 void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int scale_fac, size_t year_pos, char *tile)
 {
+	// Draw graph from top to bottom
 	int i;
 	for (i = Y_AXIS; i>0; i--)
 	{
