@@ -60,7 +60,7 @@
 char *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
             		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 // Could be done as defines 
-enum months_e {na, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep,
+enum months_e {Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep,
 					Oct, Nov, Dec};
 
 typedef struct
@@ -79,21 +79,45 @@ typedef struct
 
 }year_rainfull_t;
 
+typedef struct
+{
+	double rainfull;
+	int months;
+	int min_y;
+	int max_y;
+
+}month_avrage_t;
+
 int mygetchar();
 int get_data(year_rainfull_t *data, int *site, size_t *size);
-void s1_output(year_rainfull_t *data, int site, size_t size);
+void s1_output(year_rainfull_t *data, int site, size_t size, int lines);
+void yty_month_is_data(year_rainfull_t *data, size_t size, int *min_y, int *max_y, int m);
+int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull);
+void store_month_avrage(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
+void s2_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
 
 int main(int argc, char *argv[]) 
 {
 	int site = 0;
-	size_t size = 0;	
+	size_t size = 0;
+	int lines = 0;	
+	month_avrage_t avrg_rainfull[MONTHS];
 	year_rainfull_t data[START_YEARS];
 	// Clear all values
 	memset(data, 0, sizeof(data));
 
 	// S1
-	get_data(data, &site, &size);
-	s1_output(data, site, size);
+	lines = get_data(data, &site, &size);
+	s1_output(data, site, size, lines);
+
+	// S2
+	store_month_avrage(data, size, avrg_rainfull);
+	s2_output(data, size, avrg_rainfull);
+
+	// S3
+	
+
+	return 1;
 }
 
 
@@ -113,6 +137,7 @@ int get_data(year_rainfull_t *data, int *site, size_t *size)
     double rb;
     char vb;
 	int sb;
+	int lines = 0;
 
 	bool first_run = true;
 	*size = 0;
@@ -125,6 +150,7 @@ int get_data(year_rainfull_t *data, int *site, size_t *size)
 	more testing is needed!*/
     while(scanf("IDCJAC0001,%d,%d,%d,%lf,%c\n", &sb, &yb, &mb, &rb, &vb) == 5)
     {
+		lines++;
         // Special case, first run 
         if (first_run == true)
 		{
@@ -152,18 +178,19 @@ int get_data(year_rainfull_t *data, int *site, size_t *size)
 			data[*size].month[mb-MONTH_OFF].valid = IN_VALID;
 		}	
     }
-	// Sucsess 
-	return 1;
+
+	*size +=1;
+	// return lines read
+	return lines;
 }
 
 /* Outputs S1 */ 
-/* STILL NEEDS FORMATTING!! */
-void s1_output(year_rainfull_t *data, int site, size_t size)
+void s1_output(year_rainfull_t *data, int site, size_t size, int lines)
 {
-	printf("S1, site number %d, %ld datalines in input\n", site, size);
+	printf("S1, site number %06d, %d datalines in input\n", site, lines);
 	
 	int i;
-	for (i=0; i <= size; i++)
+	for (i=0; i < size; i++)
 	{
 		printf("S1, %d:", data[i].year);
 
@@ -172,16 +199,99 @@ void s1_output(year_rainfull_t *data, int site, size_t size)
 		{
 			if (data[i].month[j].valid != NO_VALID)
 			{
-				printf("%5s", months[j]);
+				printf("%4s", months[j]);
 				if (data[i].month[j].valid == IN_VALID)
 					printf("%s", IN_DATA);
+				else
+					putchar(' ');
+				
 			}
 			else
 			{
-				printf(" %s", NO_DATA);
+				printf(" %s ", NO_DATA);
 			}
 			
 		}
 		puts("");
+	}
+}
+
+/* Finds min and max years for the month having data, regadless if valid */
+void yty_month_is_data(year_rainfull_t *data, size_t size, int *min_y, int *max_y, int m)
+{
+	// Get lowest month 
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		if (data[i].month[m].valid != NO_VALID)
+		{
+			*min_y = data[i].year;
+			break;
+		}
+	}
+
+	// Check for max
+	for (i = 0; i < size; i++)
+	{
+		if (data[i].month[m].valid != NO_VALID)
+		{
+			*max_y = data[i].year;
+		}
+	}
+}
+
+/* Finds the sum of the months rainfull, include invalid data.
+returns number of months sumed */
+int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull)
+{
+	int months = 0;
+	
+	int i;
+	for (i = 0; i < size; i++)
+	{
+		// Check each month to see its validity first
+		if(data[i].month[m].valid != NO_VALID)
+		{
+			months++;
+			*rainfull += data[i].month[m].rainfull;
+		}
+	}
+	// Find the avrage 
+	*rainfull = *rainfull/(double)months;
+	return months;
+}
+
+/* Gets and stores the avrage rainfull for each month into a stuct */
+void store_month_avrage(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull)
+{
+	int i;
+	for(i = 0; i < MONTHS; i++)
+	{
+		// For each month fill month_avrage_t with rainfull related data
+		avrg_rainfull[i].months = month_avrage(data, size, i, &(avrg_rainfull[i].rainfull));
+		// Get the years this data set is for
+		yty_month_is_data(data, size, &(avrg_rainfull[i].min_y), &(avrg_rainfull[i].max_y), i);
+	}
+}
+
+/* Prints the S2 outputs */
+void s2_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull)
+{
+	puts("");
+	int i;
+	for (i = 0; i < MONTHS; i++)
+	{
+		// Check if at least one data point available before printing
+		if (avrg_rainfull[i].months > 0)
+		{
+			printf("S2, %s, %2d values, %d-%d, mean of %5.1lfmm\n", 
+			months[i], avrg_rainfull[i].months, avrg_rainfull[i].min_y,
+			avrg_rainfull[i].max_y, avrg_rainfull[i].rainfull);
+		}
+		else 
+		{
+			printf("S2, %s, %2d values\n", 
+			months[i], avrg_rainfull[i].months);
+		}
 	}
 }
