@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include <string.h>
 
 #define NO_VALID   	0	// No data
@@ -50,18 +51,17 @@
 
 #define MONTH_OFF	1 	// Array month offset	
 
-#define STAGE_1 	'S1'
-#define STAGE_2 	'S2'
-#define STAGE_3 	'S3'
-
 #define NO_DATA		"..."
 #define IN_DATA		"*"
 
+#define KEN_SUM		2 // starting point for sum
+
+#define Y_AXIS		24
+#define COL_WIDTH	4
+#define YEAR_C_OFF	2
+
 char *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
             		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-// Could be done as defines 
-enum months_e {Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep,
-					Oct, Nov, Dec};
 
 typedef struct
 {
@@ -85,7 +85,6 @@ typedef struct
 	int months;
 	int min_y;
 	int max_y;
-
 }month_avrage_t;
 
 int mygetchar();
@@ -95,12 +94,20 @@ void yty_month_is_data(year_rainfull_t *data, size_t size, int *min_y, int *max_
 int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull);
 void store_month_avrage(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
 void s2_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
+int tau_delta(double r_i, double r_j);
+double kendall_tau(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int m);
+void s3_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
+void s4_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, char *year);
+size_t year_serch(year_rainfull_t *data, size_t size, int year);
+double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos);
+void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int scale_fac, size_t year_pos, char *tile);
 
 int main(int argc, char *argv[]) 
 {
-	int site = 0;
+	int site	= 0;
 	size_t size = 0;
-	int lines = 0;	
+	int lines 	= 0;	
+	//int i 		= 0;
 	month_avrage_t avrg_rainfull[MONTHS];
 	year_rainfull_t data[START_YEARS];
 	// Clear all values
@@ -115,8 +122,12 @@ int main(int argc, char *argv[])
 	s2_output(data, size, avrg_rainfull);
 
 	// S3
-	
+	s3_output(data, size, avrg_rainfull);
 
+	// S4
+	s4_output(data, size, avrg_rainfull, 2003);
+
+	printf("Ta daa!");
 	return 1;
 }
 
@@ -138,9 +149,7 @@ int get_data(year_rainfull_t *data, int *site, size_t *size)
     char vb;
 	int sb;
 	int lines = 0;
-
 	bool first_run = true;
-	*size = 0;
 
 	// Eat first line
 	while(mygetchar() != '\n');
@@ -164,7 +173,6 @@ int get_data(year_rainfull_t *data, int *site, size_t *size)
         {
             *size += 1;
             data[*size].year = yb;
-
         }
 
 		// Input month data into that year
@@ -293,5 +301,173 @@ void s2_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull
 			printf("S2, %s, %2d values\n", 
 			months[i], avrg_rainfull[i].months);
 		}
+	}
+}
+
+int tau_delta(double r_i, double r_j)
+{
+	if (r_i < r_j)
+		return 1;
+	if (r_i > r_j)
+		return -1;
+	if (r_i == r_j)
+		return 0;
+	// redundancy 
+	return 0;
+}
+
+double kendall_tau(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int m)
+{
+    int sum = 0;
+	// Find r_i and r_j
+	// make an array of all exiting values for month
+	// as it makes the math metaly easier to think about
+	double rain[avrg_rainfull[m].months];
+	int j = 0;
+	int i;
+	for (i = 0; i <size; i++)
+	{
+		// Check each month to see its validity first
+		if(data[i].month[m].valid != NO_VALID)
+		{
+			rain[j] = data[i].month[m].rainfull;
+			j++;
+		}
+	}
+	// Compute sum of tau_delta
+	for (i = 0; i<=avrg_rainfull[m].months - KEN_SUM; i++)
+	{
+		int n;
+		for (n = i+1; n<=avrg_rainfull[m].months - 1; n++)
+		{
+			sum += tau_delta(rain[i], rain[n]);
+		}
+	}
+
+	return (2.0/((double)j*((double)j-1.0)))*sum;
+} 
+
+/* Prints the S3 outputs */
+void s3_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull)
+{
+	puts("");
+	int i;
+	for (i = 0; i < MONTHS; i++)
+	{
+		// Check if at least two data point available before printing
+		if (avrg_rainfull[i].months >= 2)
+		{
+			printf("S3, %s, %2d values, %d-%d, tau of %5.2lf\n", 
+			months[i], avrg_rainfull[i].months, avrg_rainfull[i].min_y,
+			avrg_rainfull[i].max_y, kendall_tau(data, size, avrg_rainfull, i));
+		}
+		else 
+		{
+			printf("S3, %s, %2d values\n", 
+			months[i], avrg_rainfull[i].months);
+		}
+	}
+	puts("");
+}
+
+/* Prints graph of year */
+void s4_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, char *year)
+{
+	double max_rf = 0;
+	size_t year_pos = 0;
+	int scale_fac = 0;
+	/* Create a tile from the last 2 digits of the year. i doubt this code
+	will be used in a little under 8000 years*/
+	char graph_tile[] = year+2;
+	// Find the largest value for 'year'
+	year_pos = year_serch(data, size, atoi(year));
+	max_rf = max_rainfull(data,size,year_pos);
+	scale_fac = ceil(max_rf/Y_AXIS);
+	printf("S4, %s max is %5.1lf, scale is %d\n", year, max_rf, scale_fac);
+
+	
+	// Draw graph
+	draw_graph(data, size, avrg_rainfull, scale_fac, year_pos, graph_tile);
+	puts("");
+
+}
+
+/* Returns the element that hold the year */
+size_t year_serch(year_rainfull_t *data, size_t size, int year)
+{
+	// Take a guess on where the year is located
+	int delta = year - data[0].year;
+	while(delta >= 0 && delta <= size)
+	{
+		if(data[delta].year == year)
+			return delta;
+		if(data[delta].year > year)
+			delta--;
+		if(data[delta].year < year)
+			delta++;
+	}
+	// If fails will return 0, might change to an assert 
+	// or return -1 and have a check when calling
+	return 0;
+}
+/* Finds the largest rainfull in the year */
+double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos)
+{
+	double max = 0;
+	// Serch for year
+	int i;
+	for(i = 0; i<MONTHS; i++)
+	{
+		if (data[year_pos].month[i].rainfull > max)
+			max = data[year_pos].month[i].rainfull;
+	}
+	return max;
+}
+
+void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int scale_fac, size_t year_pos, char *tile)
+{
+	int i;
+	for (i = Y_AXIS; i>0; i--)
+	{
+		// Draw y axis
+		printf("%4d | ", i*scale_fac);
+		int j;
+		for (j = 0; j<MONTHS; j++)
+		{
+			// Check avrg first
+			if (ceil(avrg_rainfull[j].rainfull/scale_fac) == i)
+			{
+				putchar('*');
+				// Check if month needs a tile drawn
+				if(ceil(data[year_pos].month[j].rainfull/scale_fac) >= i)
+					printf("%s", tile);
+				else
+					printf("**");
+				putchar('*');
+			}
+			else
+			{
+				if(ceil(data[year_pos].month[j].rainfull/scale_fac) >= i)
+					printf(" %s ", tile);	
+				else 
+					printf("    ");
+			} 
+			// add extra space for the + colum
+			putchar(' ');
+		}
+		puts("");
+	}
+
+	// Draw base
+	printf("%4d +-",0);
+	for(i = 0; i<MONTHS; i++)
+	{
+		printf("----+");
+	}
+	// \n followed by 7 spaces
+	printf("\n       ");
+	for (i = 0; i<MONTHS; i++)
+	{
+		printf("%s  ", months[i]);
 	}
 }
