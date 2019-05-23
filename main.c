@@ -88,19 +88,28 @@ typedef struct
 }month_avrage_t;
 
 int mygetchar();
-int get_data(year_rainfull_t *data, int *site, size_t *size);
-void s1_output(year_rainfull_t *data, int site, size_t size, int lines);
-void yty_month_is_data(year_rainfull_t *data, size_t size, int *min_y, int *max_y, int m);
-int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull);
-void store_month_avrage(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
-void s2_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
 int tau_delta(double r_i, double r_j);
-double kendall_tau(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int m);
-void s3_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull);
-void s4_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, char *year);
+int get_data(year_rainfull_t *data, size_t *size, int *site);
+int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull);
+void store_month_avrage(year_rainfull_t *data, size_t size,
+		 month_avrage_t *avrg_rainfull);
+void yty_month_is_data(year_rainfull_t *data, size_t size,
+		 int *min_y, int *max_y, int m);
+void draw_graph(year_rainfull_t *data, size_t size, 
+		month_avrage_t *avrg_rainfull, int scale_fac, 
+		size_t year_pos, char *tile);
+void s1_output(year_rainfull_t *data, int site, size_t size, int lines);
+void s2_output(year_rainfull_t *data, size_t size,
+		 month_avrage_t *avrg_rainfull);
+void s3_output(year_rainfull_t *data, size_t size,
+		 month_avrage_t *avrg_rainfull);
+void s4_output(year_rainfull_t *data, size_t size,
+		 month_avrage_t *avrg_rainfull, char *year);
+double kendall_tau(year_rainfull_t *data, size_t size,
+		 month_avrage_t *avrg_rainfull, int m);
 size_t year_serch(year_rainfull_t *data, size_t size, int year);
 double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos);
-void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int scale_fac, size_t year_pos, char *tile);
+
 
 int main(int argc, char *argv[]) 
 {
@@ -143,7 +152,7 @@ int mygetchar()
 }
 
 /* Passes the contontent of stdin into year_rainfull_t array*/
-int get_data(year_rainfull_t *data, int *site, size_t *size)
+int get_data(year_rainfull_t *data, size_t *size, int *site)
 {
 	// Buffers
     int yb;
@@ -228,7 +237,8 @@ void s1_output(year_rainfull_t *data, int site, size_t size, int lines)
 }
 
 /* Finds min and max years for the month having data, regadless if valid */
-void yty_month_is_data(year_rainfull_t *data, size_t size, int *min_y, int *max_y, int m)
+void yty_month_is_data(year_rainfull_t *data, size_t size, 
+			int *min_y, int *max_y, int m)
 {
 	// Get lowest month 
 	int i;
@@ -273,20 +283,24 @@ int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull)
 }
 
 /* Gets and stores the avrage rainfull for each month into a stuct */
-void store_month_avrage(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull)
+void store_month_avrage(year_rainfull_t *data, size_t size,
+			month_avrage_t *avrg_rainfull)
 {
 	int i;
 	for(i = 0; i < MONTHS; i++)
 	{
 		// For each month fill month_avrage_t with rainfull related data
-		avrg_rainfull[i].months = month_avrage(data, size, i, &(avrg_rainfull[i].rainfull));
+		avrg_rainfull[i].months = month_avrage(data, size, i, 
+			&(avrg_rainfull[i].rainfull));
 		// Get the years this data set is for
-		yty_month_is_data(data, size, &(avrg_rainfull[i].min_y), &(avrg_rainfull[i].max_y), i);
+		yty_month_is_data(data, size, &(avrg_rainfull[i].min_y), 
+			&(avrg_rainfull[i].max_y), i);
 	}
 }
 
 /* Prints the S2 outputs */
-void s2_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull)
+void s2_output(year_rainfull_t *data, size_t size, 
+			month_avrage_t *avrg_rainfull)
 {
 	puts("");
 	int i;
@@ -319,7 +333,8 @@ int tau_delta(double r_i, double r_j)
 	return 0;
 }
 
-double kendall_tau(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int m)
+double kendall_tau(year_rainfull_t *data, size_t size,
+			month_avrage_t *avrg_rainfull, int m)
 {
     int sum = 0;
 	// Find r_i and r_j
@@ -351,7 +366,8 @@ double kendall_tau(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rain
 } 
 
 /* Prints the S3 outputs */
-void s3_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull)
+void s3_output(year_rainfull_t *data, size_t size,
+			month_avrage_t *avrg_rainfull)
 {
 	puts("");
 	int i;
@@ -374,7 +390,8 @@ void s3_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull
 }
 
 /* Prints graph of year */
-void s4_output(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, char *year)
+void s4_output(year_rainfull_t *data, size_t size,
+			month_avrage_t *avrg_rainfull, char *year)
 {
 	double max_rf 	= 0;
 	size_t year_pos = 0;
@@ -426,7 +443,9 @@ double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos)
 	return max;
 }
 
-void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int scale_fac, size_t year_pos, char *tile)
+void draw_graph(year_rainfull_t *data, size_t size,
+			month_avrage_t *avrg_rainfull, int scale_fac,
+			size_t year_pos, char *tile)
 {
 	// Draw graph from top to bottom
 	double max = max_rainfull(data, size, year_pos);
