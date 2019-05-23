@@ -30,7 +30,7 @@
    regardless of whether or not I personally make use of such solutions
    or sought benefit from such actions.
 
-   Signed by: Flynn Harrison #add student number
+   Signed by: Flynn Harrison 992559
    Dated:     15/05/2019
 
 */
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	{
 		s4_output(data, size, avrg_rainfull, argv[i]);
 	}
-	
+
 	printf("Ta daa!");
 	return 1;
 }
@@ -429,9 +429,14 @@ double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos)
 void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainfull, int scale_fac, size_t year_pos, char *tile)
 {
 	// Draw graph from top to bottom
+	double max = max_rainfull(data, size, year_pos);
 	int i;
 	for (i = Y_AXIS; i>0; i--)
 	{
+		while(i > ceil(max/scale_fac) && i > 0)
+		{
+			i--;
+		}
 		// Draw y axis
 		printf("%4d | ", i*scale_fac);
 		int j;
@@ -473,4 +478,5 @@ void draw_graph(year_rainfull_t *data, size_t size, month_avrage_t *avrg_rainful
 	{
 		printf("%s  ", months[i]);
 	}
+	puts("");
 }
