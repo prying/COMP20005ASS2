@@ -492,10 +492,10 @@ void draw_graph(year_rainfull_t *data, size_t size,
 			{
 				if(ceil(data[year_pos].month[j].rainfull/scale_fac) >= i)
 					printf(" %s ", tile);	
-				else 
+				else // Empty tile
 					printf("    ");
 			} 
-			// add extra space for the + colum
+			// Add extra space for the + colum
 			putchar(' ');
 		}
 		puts("");
@@ -515,3 +515,7 @@ void draw_graph(year_rainfull_t *data, size_t size,
 	}
 	puts("");
 }
+
+/* yet another fun assigment, i learnt from this one 
+the power of pre planning my assigment, as it spead 
+up development time very nicely :D*/
