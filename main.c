@@ -54,9 +54,10 @@
 #define NO_DATA		"..."
 #define IN_DATA		"*"
 
-#define KEN_SUM		2 // starting point for sum
-
-#define Y_AXIS		24
+#define KEN_SUMI	2 	// starting point for sum
+#define KEN_SUMJ	1
+// Graph settings
+#define Y_AXIS		24	
 #define COL_WIDTH	4
 #define YEAR_C_OFF	2
 
@@ -65,16 +66,16 @@ char *months[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 
 typedef struct
 {
-    __uint8_t valid;
-    // Monthly Precipitation Total (millimetres)
-    double rainfull;
+	__uint8_t valid;
+	// Monthly Precipitation Total (millimetres)
+	double rainfull;
 
 }month_rainfull_t;
 
 typedef struct
 {
-    int year;
-    // needs better name
+	int year;
+	// needs better name
 	month_rainfull_t month[MONTHS];
 
 }year_rainfull_t;
@@ -88,9 +89,9 @@ typedef struct
 }month_avrage_t;
 
 int mygetchar();
-int tau_delta(double r_i, double r_j);
+int delta_tau(double r_i, double r_j);
 int get_data(year_rainfull_t *data, size_t *size, int *site);
-int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull);
+int month_avrage(year_rainfull_t *data, size_t size, int m, double *avg_rain);
 void store_month_avrage(year_rainfull_t *data, size_t size,
 		 month_avrage_t *avrg_rainfull);
 void yty_month_is_data(year_rainfull_t *data, size_t size,
@@ -122,6 +123,7 @@ int main(int argc, char *argv[])
 	// Clear all values
 	memset(data, 0, sizeof(data));
 
+	
 	// S1
 	lines = get_data(data, &size, &site);
 	s1_output(data, site, size, lines);
@@ -134,12 +136,14 @@ int main(int argc, char *argv[])
 	s3_output(data, size, avrg_rainfull);
 
 	// S4
+	// itterate through the arguments 
 	for(i = 1; i<argc; i++)
 	{
 		s4_output(data, size, avrg_rainfull, argv[i]);
 	}
 
-	printf("Ta daa!");
+	// For fun (idk, if your curious these are part of VT100 control set)
+	printf("\033[31mT\033[35ma \033[33md\033[32ma\033[36ma\033[34m!");
 	return 1;
 }
 
@@ -154,14 +158,18 @@ int mygetchar()
 /* Passes the contontent of stdin into year_rainfull_t array*/
 int get_data(year_rainfull_t *data, size_t *size, int *site)
 {
+	int lines 		= 0;
+	bool first_run 	= true;
 	// Buffers
-    int yb;
-    int mb;
-    double rb;
-    char vb;
+	int yb;
+	int mb;
 	int sb;
-	int lines = 0;
-	bool first_run = true;
+	char vb;
+	double rb;
+	
+	
+
+
 
 	// Eat first line
 	while(mygetchar() != '\n');
@@ -169,8 +177,8 @@ int get_data(year_rainfull_t *data, size_t *size, int *site)
 	/* Should work without the \n at the end, but on debian (Linux mint 19.1)
 	system it wont work without it, but works fine on Windows 10. 
 	more testing is needed!*/
-    while(scanf("IDCJAC0001,%d,%d,%d,%lf,%c\n", &sb, &yb, &mb, &rb, &vb) == 5)
-    {
+	while(scanf("IDCJAC0001,%d,%d,%d,%lf,%c\n", &sb, &yb, &mb, &rb, &vb) == 5)
+	{
 		lines++;
         // Special case, first run 
         if (first_run == true)
@@ -197,7 +205,7 @@ int get_data(year_rainfull_t *data, size_t *size, int *site)
 		{
 			data[*size].month[mb-MONTH_OFF].valid = IN_VALID;
 		}	
-    }
+	}
 
 	*size +=1;
 	// return lines read
@@ -209,6 +217,7 @@ void s1_output(year_rainfull_t *data, int site, size_t size, int lines)
 {
 	printf("S1, site number %06d, %d datalines in input\n", site, lines);
 	
+	// Itterate though each year and print the months
 	int i;
 	for (i=0; i < size; i++)
 	{
@@ -217,6 +226,7 @@ void s1_output(year_rainfull_t *data, int site, size_t size, int lines)
 		int j;
 		for (j = 0; j< MONTHS; j++)
 		{
+			// Check if what needs to be printed
 			if (data[i].month[j].valid != NO_VALID)
 			{
 				printf("%4s", months[j]);
@@ -234,6 +244,7 @@ void s1_output(year_rainfull_t *data, int site, size_t size, int lines)
 		}
 		puts("");
 	}
+	puts("");
 }
 
 /* Finds min and max years for the month having data, regadless if valid */
@@ -263,7 +274,7 @@ void yty_month_is_data(year_rainfull_t *data, size_t size,
 
 /* Finds the sum of the months rainfull, include invalid data.
 returns number of months sumed */
-int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull)
+int month_avrage(year_rainfull_t *data, size_t size, int m, double *avg_rain)
 {
 	int months = 0;
 	
@@ -274,11 +285,11 @@ int month_avrage(year_rainfull_t *data, size_t size, int m, double *rainfull)
 		if(data[i].month[m].valid != NO_VALID)
 		{
 			months++;
-			*rainfull += data[i].month[m].rainfull;
+			*avg_rain += data[i].month[m].rainfull;
 		}
 	}
 	// Find the avrage 
-	*rainfull = *rainfull/(double)months;
+	*avg_rain = *avg_rain/(double)months;
 	return months;
 }
 
@@ -302,7 +313,6 @@ void store_month_avrage(year_rainfull_t *data, size_t size,
 void s2_output(year_rainfull_t *data, size_t size, 
 			month_avrage_t *avrg_rainfull)
 {
-	puts("");
 	int i;
 	for (i = 0; i < MONTHS; i++)
 	{
@@ -319,9 +329,10 @@ void s2_output(year_rainfull_t *data, size_t size,
 			months[i], avrg_rainfull[i].months);
 		}
 	}
+	puts("");
 }
 
-int tau_delta(double r_i, double r_j)
+int delta_tau(double r_i, double r_j)
 {
 	if (r_i < r_j)
 		return 1;
@@ -337,11 +348,12 @@ double kendall_tau(year_rainfull_t *data, size_t size,
 			month_avrage_t *avrg_rainfull, int m)
 {
     int sum = 0;
-	// Find r_i and r_j
 	// make an array of all exiting values for month
-	// as it makes the math metaly easier to think about
+	// as it makes the math easier to think about
 	double rain[avrg_rainfull[m].months];
 	int j = 0;
+
+	// Find r_i and r_j
 	int i;
 	for (i = 0; i <size; i++)
 	{
@@ -352,13 +364,13 @@ double kendall_tau(year_rainfull_t *data, size_t size,
 			j++;
 		}
 	}
-	// Compute sum of tau_delta
-	for (i = 0; i<=avrg_rainfull[m].months - KEN_SUM; i++)
+	// Compute sum of delta_tau
+	for (i = 0; i<=avrg_rainfull[m].months - KEN_SUMI; i++)
 	{
 		int n;
-		for (n = i+1; n<=avrg_rainfull[m].months - 1; n++)
+		for (n = i+1; n<=avrg_rainfull[m].months - KEN_SUMJ; n++)
 		{
-			sum += tau_delta(rain[i], rain[n]);
+			sum += delta_tau(rain[i], rain[n]);
 		}
 	}
 
@@ -369,7 +381,6 @@ double kendall_tau(year_rainfull_t *data, size_t size,
 void s3_output(year_rainfull_t *data, size_t size,
 			month_avrage_t *avrg_rainfull)
 {
-	puts("");
 	int i;
 	for (i = 0; i < MONTHS; i++)
 	{
@@ -434,7 +445,8 @@ size_t year_serch(year_rainfull_t *data, size_t size, int year)
 double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos)
 {
 	double max = 0;
-	// Serch for year
+
+	// Cycle through months and only keep largest value
 	int i;
 	for(i = 0; i<MONTHS; i++)
 	{
@@ -444,6 +456,8 @@ double max_rainfull(year_rainfull_t *data, size_t size, size_t year_pos)
 	return max;
 }
 
+/* draws a graph of max hight Y_AXIS, with a 2 character string as a tile.
+ Year is selected uing the year_pos (returned by year_serch())*/
 void draw_graph(year_rainfull_t *data, size_t size,
 			month_avrage_t *avrg_rainfull, int scale_fac,
 			size_t year_pos, char *tile)
@@ -453,6 +467,7 @@ void draw_graph(year_rainfull_t *data, size_t size,
 	int i;
 	for (i = Y_AXIS; i>0; i--)
 	{
+		// Remove empty rows from the top
 		while(i > ceil(max/scale_fac) && i > 0)
 		{
 			i--;
